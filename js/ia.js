@@ -1,4 +1,4 @@
-// js/ia.js — Simulación local de IA (modo retro)
+// js/ia.js — Frases retro + máquina de escribir + voz robótica sincronizada
 const frasesRetro = [
   "🌌 Cada página que lees enciende un nuevo pixel en tu universo mental.",
   "💾 Tu mente se está actualizando... conocimiento instalado con éxito.",
@@ -17,13 +17,58 @@ const frasesRetro = [
   "🧩 Leer es desbloquear un nivel secreto en tu mente digital."
 ];
 
-// 🔹 Función principal (simulada)
+// 🔹 Generar frase retro aleatoria y mostrar con efecto + voz
 export async function generarFrase(tituloLibro = "tu lectura") {
-  // Simula un pequeño retardo para dar efecto “IA pensando”
-  await new Promise((r) => setTimeout(r, 800));
-
+  await new Promise((r) => setTimeout(r, 700)); // Simula IA pensando
   const randomIndex = Math.floor(Math.random() * frasesRetro.length);
   const frase = frasesRetro[randomIndex].replace("tu lectura", tituloLibro);
+  await escribirTextoConEfecto("fraseIA", frase);
+  reproducirVozRobotica(frase);
   return frase;
+}
+
+// ✨ Efecto máquina de escribir (devuelve promesa para sincronizar)
+function escribirTextoConEfecto(elementId, texto, velocidad = 35) {
+  return new Promise((resolve) => {
+    const elemento = document.getElementById(elementId);
+    if (!elemento) return resolve();
+    elemento.textContent = "";
+    let i = 0;
+    const intervalo = setInterval(() => {
+      elemento.textContent += texto.charAt(i);
+      i++;
+      if (i >= texto.length) {
+        clearInterval(intervalo);
+        resolve();
+      }
+    }, velocidad);
+  });
+}
+
+// 🔊 Reproducir voz robótica retro (Speech Synthesis API)
+function reproducirVozRobotica(texto) {
+  try {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const utter = new SpeechSynthesisUtterance(texto);
+
+    // Buscar voz con tono robótico o español
+    const voces = synth.getVoices();
+    const vozRobot =
+      voces.find(v => v.name.toLowerCase().includes("zira") || v.name.toLowerCase().includes("google español")) ||
+      voces.find(v => v.lang.startsWith("es")) ||
+      voces[0];
+
+    utter.voice = vozRobot;
+    utter.lang = "es-ES";
+    utter.rate = 1.0;   // velocidad normal
+    utter.pitch = 0.65; // tono más grave, efecto robot
+    utter.volume = 1;   // volumen máximo
+
+    synth.cancel();     // detener voz anterior
+    synth.speak(utter);
+  } catch (err) {
+    console.warn("🎙️ Error al usar la voz robótica:", err);
+  }
 }
 
