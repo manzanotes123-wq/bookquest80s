@@ -8,6 +8,9 @@ import {
 import { calcularLogros } from "./logros.js";
 import { generarFrase } from "./ia.js";
 
+// --------------------------------------------------
+// 🔹 Referencias del DOM
+// --------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const lista = $("listaLibros");
 const btnLogout = $("btnLogout");
@@ -18,16 +21,20 @@ const btnExportPDF = $("btnExportPDF");
 const filtroGenero = $("filtroGenero");
 const filtroEstado = $("filtroEstado");
 
+// --------------------------------------------------
 // 🔹 Cerrar sesión
+// --------------------------------------------------
 btnLogout?.addEventListener("click", async () => {
   await signOut(auth);
   window.location.href = "index.html";
 });
 
-// 🔹 Agregar libro demo dentro del usuario autenticado
+// --------------------------------------------------
+// 🔹 Agregar libro demo al usuario autenticado
+// --------------------------------------------------
 btnAddDemo?.addEventListener("click", async () => {
   const user = auth.currentUser;
-  if (!user) return alert("Debes iniciar sesión primero");
+  if (!user) return alert("⚠️ Debes iniciar sesión primero.");
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
     await addDoc(ref, {
@@ -40,13 +47,15 @@ btnAddDemo?.addEventListener("click", async () => {
     });
     await cargarLibros();
     await calcularLogros();
-    alert("Libro demo agregado. ¡Sigue leyendo, viajero del neón!");
+    alert("✅ Libro demo agregado. ¡Sigue leyendo, viajero del neón!");
   } catch (e) {
-    alert("No se pudo agregar el libro demo: " + e.message);
+    alert("❌ No se pudo agregar el libro demo: " + e.message);
   }
 });
 
+// --------------------------------------------------
 // 🔹 Generar frase IA
+// --------------------------------------------------
 btnFrase?.addEventListener("click", async () => {
   btnFrase.disabled = true;
   btnFrase.textContent = "Generando...";
@@ -58,20 +67,24 @@ btnFrase?.addEventListener("click", async () => {
     const frase = await generarFrase(titulo);
     $("fraseIA").innerText = frase;
   } catch (e) {
-    $("fraseIA").innerText = "No fue posible generar la frase en este momento.";
+    $("fraseIA").innerText = "⚠️ No fue posible generar la frase en este momento.";
   } finally {
     btnFrase.disabled = false;
     btnFrase.textContent = "🎤 Frase motivadora IA";
   }
 });
 
+// --------------------------------------------------
+// 🔹 Filtros
+// --------------------------------------------------
 filtroGenero?.addEventListener("change", cargarLibros);
 filtroEstado?.addEventListener("change", cargarLibros);
-
 btnExportCSV?.addEventListener("click", exportCSV);
 btnExportPDF?.addEventListener("click", exportPDF);
 
-// 🔹 Cargar libros personales
+// --------------------------------------------------
+// 🔹 Cargar libros del usuario actual
+// --------------------------------------------------
 async function cargarLibros() {
   const user = auth.currentUser;
   if (!user) return;
@@ -79,13 +92,14 @@ async function cargarLibros() {
   const q = query(collection(db, "usuarios", user.uid, "libros"), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   lista.innerHTML = "";
-  const g = filtroGenero?.value || "todos";
-  const e = filtroEstado?.value || "todos";
+
+  const generoFiltro = filtroGenero?.value || "todos";
+  const estadoFiltro = filtroEstado?.value || "todos";
 
   snap.forEach((d) => {
     const data = d.data();
-    if (g !== "todos" && data.genero !== g) return;
-    if (e !== "todos" && data.estado !== e) return;
+    if (generoFiltro !== "todos" && data.genero !== generoFiltro) return;
+    if (estadoFiltro !== "todos" && data.estado !== estadoFiltro) return;
 
     const card = document.createElement("div");
     card.className = "card";
@@ -103,7 +117,7 @@ async function cargarLibros() {
 
     lista.appendChild(card);
 
-    // 🔸 Marcar como leído (+100 XP)
+    // 🟢 Marcar como leído (+100 XP)
     card.querySelector(".btnRead").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
       try {
@@ -115,13 +129,13 @@ async function cargarLibros() {
         new Audio("assets/sounds/levelup.wav").play();
         await cargarLibros();
         await calcularLogros();
-        alert("¡Has ganado 100 XP y el libro pasó a 'leído'!");
+        alert("🎉 ¡Has ganado 100 XP y el libro pasó a 'leído'!");
       } catch (err) {
-        alert("Error al actualizar XP/estado: " + err.message);
+        alert("❌ Error al actualizar XP/estado: " + err.message);
       }
     });
 
-    // 🔸 Eliminar libro
+    // 🔴 Eliminar libro
     card.querySelector(".btnDelete").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
       if (!confirm("¿Eliminar este libro?")) return;
@@ -131,7 +145,9 @@ async function cargarLibros() {
   });
 }
 
+// --------------------------------------------------
 // 🔹 Exportar libros a CSV
+// --------------------------------------------------
 async function exportCSV() {
   const user = auth.currentUser;
   if (!user) return;
@@ -139,7 +155,7 @@ async function exportCSV() {
   let csv = "Título,Autor,Género,Estado,XP\n";
   snap.forEach((d) => {
     const x = d.data();
-    csv += `"${(x.titulo || "").replace('"', '""')}","${(x.autor || "").replace('"', '""')}",` +
+    csv += `"${(x.titulo || "").replace(/"/g, '""')}","${(x.autor || "").replace(/"/g, '""')}",` +
            `"${x.genero || ""}","${x.estado || ""}",${x.xp || 0}\n`;
   });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -150,7 +166,9 @@ async function exportCSV() {
   a.click();
 }
 
+// --------------------------------------------------
 // 🔹 Exportar libros a PDF
+// --------------------------------------------------
 async function exportPDF() {
   const { jsPDF } = await import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
   const docPDF = new jsPDF();
@@ -159,6 +177,7 @@ async function exportPDF() {
   const user = auth.currentUser;
   if (!user) return;
   const snap = await getDocs(collection(db, "usuarios", user.uid, "libros"));
+
   let y = 20;
   snap.forEach((d) => {
     const x = d.data();
@@ -170,10 +189,13 @@ async function exportPDF() {
       y = 10;
     }
   });
+
   docPDF.save("BookQuest80s.pdf");
 }
 
-// 🔹 Verificar sesión
+// --------------------------------------------------
+// 🔹 Verificar sesión activa
+// --------------------------------------------------
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
