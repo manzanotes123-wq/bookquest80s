@@ -83,3 +83,16 @@ button.google{border-color:#ffffff;color:#ffffff}
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
 }
+
+/* ✨ Efecto visual cuando la IA "habla" */
+.ia-hablando {
+  animation: neonglow 0.6s ease-in-out infinite alternate;
+  color: #00ffff;
+  text-shadow: 0 0 12px #00ffff, 0 0 20px #00ffff;
+}
+
+@keyframes neonglow {
+  from { text-shadow: 0 0 8px #00ffff, 0 0 16px #ff00ff; }
+  to { text-shadow: 0 0 18px #ff00ff, 0 0 32px #00ffff; }
+}
+
