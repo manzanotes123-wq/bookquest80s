@@ -1,4 +1,3 @@
-// js/main.js
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import {
@@ -71,10 +70,7 @@ btnAddDemo?.addEventListener("click", async () => {
       return alert("🎉 Ya tienes todos los libros demo agregados.");
     }
 
-    // Recuperar el último libro agregado desde localStorage
     const ultimoGuardado = localStorage.getItem("ultimoLibroAgregado");
-
-    // Escoger un libro distinto al último agregado
     let libro;
     do {
       libro = disponibles[Math.floor(Math.random() * disponibles.length)];
@@ -87,9 +83,7 @@ btnAddDemo?.addEventListener("click", async () => {
       createdAt: serverTimestamp()
     });
 
-    // Guardar en localStorage para evitar repetirlo después
     localStorage.setItem("ultimoLibroAgregado", libro.titulo);
-
     await cargarLibros();
     await calcularLogros();
     alert(`✅ Libro agregado: "${libro.titulo}" de ${libro.autor}`);
@@ -99,6 +93,49 @@ btnAddDemo?.addEventListener("click", async () => {
     agregandoLibro = false;
     btnAddDemo.disabled = false;
     btnAddDemo.textContent = "➕ Agregar libro demo";
+  }
+});
+
+// --------------------------------------------------
+// 🔹 Agregar libro personalizado (manual desde formulario)
+// --------------------------------------------------
+const btnAddPersonal = $("btnAddPersonal");
+
+btnAddPersonal?.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return alert("⚠️ Debes iniciar sesión primero.");
+
+  const titulo = $("tituloPersonal").value.trim();
+  const autor = $("autorPersonal").value.trim();
+  const genero = $("generoPersonal").value.trim();
+  const estado = $("estadoPersonal").value;
+
+  if (!titulo || !autor || !genero) {
+    return alert("Por favor completa todos los campos del formulario.");
+  }
+
+  try {
+    const ref = collection(db, "usuarios", user.uid, "libros");
+    await addDoc(ref, {
+      titulo,
+      autor,
+      genero,
+      estado,
+      xp: 0,
+      createdAt: serverTimestamp()
+    });
+
+    // 🧹 Limpiar campos después de guardar
+    $("tituloPersonal").value = "";
+    $("autorPersonal").value = "";
+    $("generoPersonal").value = "";
+    $("estadoPersonal").selectedIndex = 0;
+
+    await cargarLibros();
+    await calcularLogros();
+    alert(`✅ Libro agregado: "${titulo}" de ${autor}`);
+  } catch (e) {
+    alert("❌ No se pudo agregar el libro: " + e.message);
   }
 });
 
