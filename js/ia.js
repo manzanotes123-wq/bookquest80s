@@ -45,14 +45,14 @@ function escribirTextoConEfecto(elementId, texto, velocidad = 35) {
   });
 }
 
-// 🔊 Reproducir voz robótica retro (Speech Synthesis API)
+// 🔊 Reproducir voz robótica retro con efecto visual
 function reproducirVozRobotica(texto) {
   try {
     const synth = window.speechSynthesis;
     if (!synth) return;
     const utter = new SpeechSynthesisUtterance(texto);
 
-    // Buscar voz con tono robótico o español
+    // Buscar voz robótica o española
     const voces = synth.getVoices();
     const vozRobot =
       voces.find(v => v.name.toLowerCase().includes("zira") || v.name.toLowerCase().includes("google español")) ||
@@ -61,11 +61,16 @@ function reproducirVozRobotica(texto) {
 
     utter.voice = vozRobot;
     utter.lang = "es-ES";
-    utter.rate = 1.0;   // velocidad normal
-    utter.pitch = 0.65; // tono más grave, efecto robot
-    utter.volume = 1;   // volumen máximo
+    utter.rate = 1.0;
+    utter.pitch = 0.65;
+    utter.volume = 1;
 
-    synth.cancel();     // detener voz anterior
+    // ✨ Activar efecto visual mientras habla
+    const fraseIA = document.getElementById("fraseIA");
+    fraseIA?.classList.add("ia-hablando");
+    utter.onend = () => fraseIA?.classList.remove("ia-hablando");
+
+    synth.cancel();
     synth.speak(utter);
   } catch (err) {
     console.warn("🎙️ Error al usar la voz robótica:", err);
