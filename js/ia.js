@@ -12,11 +12,26 @@ try {
   console.error("❌ Error al inicializar Gemini:", err);
 }
 
+// 🕹️ Frases retro de respaldo (si la IA falla o no está disponible)
+const frasesRetro = [
+  "🌌 Cada página que lees enciende un nuevo pixel en tu universo mental.",
+  "💾 Tu mente se está actualizando... conocimiento instalado con éxito.",
+  "🚀 Leer es el viaje más rápido a cualquier galaxia del tiempo.",
+  "🕹️ Subiste de nivel en sabiduría. ¡No olvides guardar tu progreso!",
+  "📖 En cada libro hay un portal, solo los valientes se atreven a abrirlo.",
+  "💡 Cada palabra que lees brilla con luz neón dentro de ti.",
+  "🎧 Las historias también tienen banda sonora, ¡escúchalas en tu imaginación!",
+  "🧠 El verdadero poder retro: aprender algo nuevo cada día.",
+  "💫 La nostalgia se lee entre líneas. Sigue explorando.",
+  "🔥 Un lector ochentero nunca se rinde, solo cambia de misión."
+];
+
 // 🔹 Función principal
 export async function generarFrase(tituloLibro = "tu lectura") {
+  // 🧱 Si no hay API configurada, usar frases retro
   if (!API_KEY || API_KEY === "TU_API_KEY_AQUI") {
     console.warn("⚠️ API Key de Gemini no configurada.");
-    return "Configura tu API Key de Gemini en js/ia.js para activar las frases IA.";
+    return obtenerFraseRetro(tituloLibro);
   }
 
   try {
@@ -30,9 +45,24 @@ export async function generarFrase(tituloLibro = "tu lectura") {
 
     const resultado = await modelo.generateContent(prompt);
     const texto = resultado.response.text();
-    return texto || "✨ La inspiración está cargando... inténtalo de nuevo.";
+
+    // Si la IA no devuelve texto válido, usar fallback
+    if (!texto || texto.trim().length === 0) {
+      console.warn("⚠️ Respuesta vacía de Gemini. Usando frase retro.");
+      return obtenerFraseRetro(tituloLibro);
+    }
+
+    return texto;
   } catch (error) {
-    console.error("Error generando frase IA:", error);
-    return "⚠️ Error al conectar con la IA. Intenta más tarde.";
+    console.error("⚠️ Error generando frase IA:", error);
+    return obtenerFraseRetro(tituloLibro);
   }
 }
+
+// 🔸 Función auxiliar para generar frase retro local
+function obtenerFraseRetro(titulo = "tu aventura literaria") {
+  const randomIndex = Math.floor(Math.random() * frasesRetro.length);
+  const frase = frasesRetro[randomIndex].replace("tu lectura", titulo);
+  return frase;
+}
+
