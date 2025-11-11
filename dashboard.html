@@ -44,6 +44,20 @@
         </select>
       </div>
 
+      <!-- 📘 NUEVO: Formulario de libro personalizado -->
+      <div id="formLibroPersonal" class="form-card">
+        <h3>➕ Agregar libro personalizado</h3>
+        <input type="text" id="tituloPersonal" placeholder="Título del libro" required>
+        <input type="text" id="autorPersonal" placeholder="Autor" required>
+        <input type="text" id="generoPersonal" placeholder="Género (Ej: Fantasía, Terror...)" required>
+        <select id="estadoPersonal">
+          <option value="pendiente">Pendiente</option>
+          <option value="leyendo">Leyendo</option>
+          <option value="leído">Leído</option>
+        </select>
+        <button id="btnAddPersonal" class="btnMain">💾 Guardar libro</button>
+      </div>
+
       <div id="listaLibros" class="cards"></div>
     </section>
 
@@ -55,8 +69,6 @@
       <p id="fraseIA" class="ia-text">Pulsa el micrófono para inspirarte.</p>
     </aside>
   </main>
-
-  <footer class="footer">© 2025 BookQuest — Estética retro ochentera • PWA</footer>
 
   <script type="module" src="js/firebaseConfig.js"></script>
   <script type="module" src="js/main.js"></script>
