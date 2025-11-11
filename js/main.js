@@ -32,11 +32,17 @@ btnLogout?.addEventListener("click", async () => {
 // --------------------------------------------------
 // 🔹 Agregar libro demo aleatorio al usuario autenticado
 // --------------------------------------------------
+let agregandoLibro = false;
+
 btnAddDemo?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return alert("⚠️ Debes iniciar sesión primero.");
 
-  // 📚 Lista de libros posibles (puedes agregar más)
+  if (agregandoLibro) return alert("⏳ Espera un momento, ya se está agregando un libro...");
+  agregandoLibro = true;
+  btnAddDemo.disabled = true;
+  btnAddDemo.textContent = "📚 Agregando...";
+
   const librosPosibles = [
     { titulo: "1984", autor: "George Orwell", genero: "Distopía" },
     { titulo: "Fahrenheit 451", autor: "Ray Bradbury", genero: "Ciencia ficción" },
@@ -54,18 +60,25 @@ btnAddDemo?.addEventListener("click", async () => {
     const ref = collection(db, "usuarios", user.uid, "libros");
     const snap = await getDocs(ref);
     const titulosActuales = snap.docs.map(d => d.data().titulo?.toLowerCase());
-
-    // 🔸 Filtrar los libros que el usuario aún no tiene
     const disponibles = librosPosibles.filter(
       l => !titulosActuales.includes(l.titulo.toLowerCase())
     );
 
     if (disponibles.length === 0) {
+      btnAddDemo.disabled = true;
+      btnAddDemo.textContent = "✔️ Todos los libros agregados";
+      agregandoLibro = false;
       return alert("🎉 Ya tienes todos los libros demo agregados.");
     }
 
-    // 📘 Elegir uno aleatorio
-    const libro = disponibles[Math.floor(Math.random() * disponibles.length)];
+    // Recuperar el último libro agregado desde localStorage
+    const ultimoGuardado = localStorage.getItem("ultimoLibroAgregado");
+
+    // Escoger un libro distinto al último agregado
+    let libro;
+    do {
+      libro = disponibles[Math.floor(Math.random() * disponibles.length)];
+    } while (libro.titulo === ultimoGuardado && disponibles.length > 1);
 
     await addDoc(ref, {
       ...libro,
@@ -74,11 +87,18 @@ btnAddDemo?.addEventListener("click", async () => {
       createdAt: serverTimestamp()
     });
 
+    // Guardar en localStorage para evitar repetirlo después
+    localStorage.setItem("ultimoLibroAgregado", libro.titulo);
+
     await cargarLibros();
     await calcularLogros();
     alert(`✅ Libro agregado: "${libro.titulo}" de ${libro.autor}`);
   } catch (e) {
     alert("❌ No se pudo agregar el libro demo: " + e.message);
+  } finally {
+    agregandoLibro = false;
+    btnAddDemo.disabled = false;
+    btnAddDemo.textContent = "➕ Agregar libro demo";
   }
 });
 
@@ -149,11 +169,9 @@ async function cargarLibros() {
     // 🟢 Marcar como leído (+100 XP) — solo una vez
     card.querySelector(".btnRead").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
-
       if (data.estado === "leído") {
         return alert(`✅ "${data.titulo}" ya fue leído.`);
       }
-
       try {
         const ref = doc(db, "usuarios", user.uid, "libros", id);
         await updateDoc(ref, {
@@ -211,19 +229,14 @@ async function exportPDF() {
   const user = auth.currentUser;
   if (!user) return;
   const snap = await getDocs(collection(db, "usuarios", user.uid, "libros"));
-
   let y = 20;
   snap.forEach((d) => {
     const x = d.data();
     const line = `${x.titulo || "?"} - ${x.autor || "?"} [${x.genero || "?"}/${x.estado || "?"}] (${x.xp || 0} XP)`;
     docPDF.text(line, 10, y);
     y += 10;
-    if (y > 280) {
-      docPDF.addPage();
-      y = 10;
-    }
+    if (y > 280) { docPDF.addPage(); y = 10; }
   });
-
   docPDF.save("BookQuest80s.pdf");
 }
 
@@ -238,4 +251,3 @@ onAuthStateChanged(auth, async (user) => {
   await cargarLibros();
   await calcularLogros();
 });
-
