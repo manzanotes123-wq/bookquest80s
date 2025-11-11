@@ -13,41 +13,49 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// 🔹 Función para registrar usuario en Firestore
+// --------------------------------------------------
+// 🔹 Función: registrar usuario en Firestore
+// --------------------------------------------------
 async function registrarUsuarioEnFirestore(user) {
   if (!user) return;
-  const ref = doc(db, "usuarios", user.uid);
 
+  const ref = doc(db, "usuarios", user.uid);
   try {
-    const existe = await getDoc(ref);
-    if (!existe.exists()) {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
       await setDoc(ref, {
         nombre: user.displayName || "Nuevo lector",
-        correo: user.email,
+        correo: user.email || "sin-correo",
         xp: 0,
         fechaRegistro: new Date().toISOString()
       });
-      console.log("✅ Usuario registrado en Firestore");
+      console.log("✅ Usuario registrado en Firestore:", user.uid);
     } else {
-      console.log("ℹ️ Usuario ya existía en Firestore");
+      console.log("ℹ️ Usuario ya existía en Firestore:", user.uid);
     }
   } catch (error) {
-    console.error("❌ Error al registrar usuario:", error);
+    console.error("❌ Error al registrar usuario en Firestore:", error);
   }
 }
 
-// 🔹 Atajos de elementos
+// --------------------------------------------------
+// 🔹 Referencias a elementos del DOM
+// --------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const btnLogin = $("btnLogin");
 const btnRegister = $("btnRegister");
 const btnGoogle = $("btnGoogle");
 const clickSound = document.getElementById("clickSound");
 
-// 🔹 Iniciar sesión con correo y contraseña
+// --------------------------------------------------
+// 🔹 Iniciar sesión (email + password)
+// --------------------------------------------------
 btnLogin?.addEventListener("click", async () => {
   clickSound?.play();
   const email = $("email").value.trim();
   const pass = $("password").value.trim();
+
+  if (!email || !pass) return alert("Por favor, llena ambos campos.");
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
@@ -55,28 +63,34 @@ btnLogin?.addEventListener("click", async () => {
     await registrarUsuarioEnFirestore(user);
     window.location.href = "dashboard.html";
   } catch (err) {
-    alert("Error: " + err.message);
+    alert("⚠️ Error al iniciar sesión: " + err.message);
   }
 });
 
-// 🔹 Crear cuenta con correo
+// --------------------------------------------------
+// 🔹 Crear cuenta nueva
+// --------------------------------------------------
 btnRegister?.addEventListener("click", async () => {
   clickSound?.play();
   const email = $("email").value.trim();
   const pass = $("password").value.trim();
 
+  if (!email || !pass) return alert("Completa el correo y la contraseña.");
+
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
     await registrarUsuarioEnFirestore(user);
-    alert("✅ Cuenta creada correctamente");
+    alert("✅ Cuenta creada correctamente. ¡Bienvenido a BookQuest 80s!");
     window.location.href = "dashboard.html";
   } catch (err) {
-    alert("Error: " + err.message);
+    alert("⚠️ Error al crear cuenta: " + err.message);
   }
 });
 
+// --------------------------------------------------
 // 🔹 Login con Google
+// --------------------------------------------------
 btnGoogle?.addEventListener("click", async () => {
   clickSound?.play();
   try {
@@ -85,13 +99,16 @@ btnGoogle?.addEventListener("click", async () => {
     await registrarUsuarioEnFirestore(user);
     window.location.href = "dashboard.html";
   } catch (err) {
-    alert("Error con Google: " + err.message);
+    alert("⚠️ Error al ingresar con Google: " + err.message);
   }
 });
 
-// 🔹 Redirigir automáticamente si ya está logueado
-onAuthStateChanged(auth, (user) => {
+// --------------------------------------------------
+// 🔹 Redirección automática si ya está logueado
+// --------------------------------------------------
+onAuthStateChanged(auth, async (user) => {
   if (user && location.pathname.endsWith("index.html")) {
+    await registrarUsuarioEnFirestore(user); // Garantiza que esté en Firestore
     window.location.href = "dashboard.html";
   }
 });
