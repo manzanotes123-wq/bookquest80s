@@ -1,7 +1,7 @@
 // js/main.js
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { 
+import {
   collection, getDocs, addDoc, serverTimestamp, query, orderBy,
   doc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
@@ -30,24 +30,53 @@ btnLogout?.addEventListener("click", async () => {
 });
 
 // --------------------------------------------------
-// 🔹 Agregar libro demo al usuario autenticado
+// 🔹 Agregar libro demo aleatorio al usuario autenticado
 // --------------------------------------------------
 btnAddDemo?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return alert("⚠️ Debes iniciar sesión primero.");
+
+  // 📚 Lista de libros posibles (puedes agregar más)
+  const librosPosibles = [
+    { titulo: "1984", autor: "George Orwell", genero: "Distopía" },
+    { titulo: "Fahrenheit 451", autor: "Ray Bradbury", genero: "Ciencia ficción" },
+    { titulo: "El Principito", autor: "Antoine de Saint-Exupéry", genero: "Infantil" },
+    { titulo: "Crónica de una muerte anunciada", autor: "Gabriel García Márquez", genero: "Realismo mágico" },
+    { titulo: "Matar a un ruiseñor", autor: "Harper Lee", genero: "Drama" },
+    { titulo: "La Odisea", autor: "Homero", genero: "Clásico" },
+    { titulo: "Dune", autor: "Frank Herbert", genero: "Ciencia ficción" },
+    { titulo: "Los juegos del hambre", autor: "Suzanne Collins", genero: "Aventura" },
+    { titulo: "It", autor: "Stephen King", genero: "Terror" },
+    { titulo: "Ready Player One", autor: "Ernest Cline", genero: "Retro Futurismo" }
+  ];
+
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
+    const snap = await getDocs(ref);
+    const titulosActuales = snap.docs.map(d => d.data().titulo?.toLowerCase());
+
+    // 🔸 Filtrar los libros que el usuario aún no tiene
+    const disponibles = librosPosibles.filter(
+      l => !titulosActuales.includes(l.titulo.toLowerCase())
+    );
+
+    if (disponibles.length === 0) {
+      return alert("🎉 Ya tienes todos los libros demo agregados.");
+    }
+
+    // 📘 Elegir uno aleatorio
+    const libro = disponibles[Math.floor(Math.random() * disponibles.length)];
+
     await addDoc(ref, {
-      titulo: "1984",
-      autor: "George Orwell",
-      xp: 120,
-      genero: "clásico",
+      ...libro,
+      xp: 0,
       estado: "pendiente",
       createdAt: serverTimestamp()
     });
+
     await cargarLibros();
     await calcularLogros();
-    alert("✅ Libro demo agregado. ¡Sigue leyendo, viajero del neón!");
+    alert(`✅ Libro agregado: "${libro.titulo}" de ${libro.autor}`);
   } catch (e) {
     alert("❌ No se pudo agregar el libro demo: " + e.message);
   }
@@ -117,9 +146,14 @@ async function cargarLibros() {
 
     lista.appendChild(card);
 
-    // 🟢 Marcar como leído (+100 XP)
+    // 🟢 Marcar como leído (+100 XP) — solo una vez
     card.querySelector(".btnRead").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
+
+      if (data.estado === "leído") {
+        return alert(`✅ "${data.titulo}" ya fue leído.`);
+      }
+
       try {
         const ref = doc(db, "usuarios", user.uid, "libros", id);
         await updateDoc(ref, {
@@ -129,7 +163,7 @@ async function cargarLibros() {
         new Audio("assets/sounds/levelup.wav").play();
         await cargarLibros();
         await calcularLogros();
-        alert("🎉 ¡Has ganado 100 XP y el libro pasó a 'leído'!");
+        alert(`🎉 ¡Has leído "${data.titulo}" y ganaste 100 XP!`);
       } catch (err) {
         alert("❌ Error al actualizar XP/estado: " + err.message);
       }
@@ -204,3 +238,4 @@ onAuthStateChanged(auth, async (user) => {
   await cargarLibros();
   await calcularLogros();
 });
+
