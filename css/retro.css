@@ -1,0 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+.login-bg{background:radial-gradient(circle at center,#111 0%,#000 100%);animation:flicker 2s infinite}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.96}}
+.retro-title{font-size:1.1rem;text-align:center;text-shadow:0 0 10px #f0f;margin:12px 0}
+.neon{color:#ff00ff;text-shadow:0 0 12px #ff00ff,0 0 24px #ff00ff}
+.crt{position:relative}
+.crt:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 2px,transparent 3px);pointer-events:none}

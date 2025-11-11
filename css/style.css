@@ -1,0 +1,29 @@
+*{box-sizing:border-box}
+body{font-family:'Press Start 2P',monospace;margin:0;color:#0ff;background:#000}
+a,button,input,select{font-family:inherit}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#0a001a;border-bottom:1px solid #0ff}
+.topbar h1{margin:0;font-size:18px;color:#ff00ff;text-shadow:0 0 12px #ff00ff}
+.topbar nav button{margin-left:8px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:16px}
+.panel{background:rgba(0,0,0,.6);border:1px solid #0ff;border-radius:8px;padding:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{border:1px solid #0ff;padding:12px;background:rgba(0,0,0,.5);transition:transform .25s, box-shadow .25s}
+.card:hover{transform:scale(1.05);box-shadow:0 0 15px #0ff}
+h2{color:#ff00ff;text-shadow:0 0 12px #ff00ff}
+.footer{padding:12px;text-align:center;border-top:1px solid #0ff;background:#0a001a}
+input,button,select{display:inline-block;padding:10px;margin:8px 6px;background:rgba(0,0,0,.7);border:1px solid #0ff;color:#0ff;text-align:center;border-radius:6px}
+button:hover{background:#0ff;color:#000;cursor:pointer}
+button.secondary{border-color:#ff00ff;color:#ff00ff}
+button.secondary:hover{background:#ff00ff;color:#000}
+button.google{border-color:#ffffff;color:#ffffff}
+.sep{position:relative;text-align:center;margin:10px 0}
+.sep:before,.sep:after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#0ff}
+.sep:before{left:0}.sep:after{right:0}
+.sep span{padding:0 8px}
+.login-container{max-width:420px;margin:8vh auto;padding:16px}
+.hint{opacity:.8;font-size:12px}
+.barra-xp{width:100%;height:10px;background:#111;border:1px solid #0ff;border-radius:4px;overflow:hidden;margin:10px 0}
+.xp{height:100%;background:linear-gradient(90deg,#00ffff,#ff00ff);transition:width 1s}
+.ia-text{min-height:60px}
+.filtros{display:flex;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}

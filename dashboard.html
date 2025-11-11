@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aventura Literaria 80s - Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/retro.css">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>📚 Aventura Literaria <span class="neon">80s</span></h1>
+    <nav>
+      <button id="btnAddDemo">Agregar libro demo</button>
+      <button id="btnFraseIA">🎤 Frase motivadora IA</button>
+      <button id="btnExportCSV">⬇️ Exportar CSV</button>
+      <button id="btnExportPDF">📄 Exportar PDF</button>
+      <button id="btnLogout">Salir</button>
+    </nav>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <h2>Biblioteca Retro</h2>
+
+      <div class="filtros">
+        <select id="filtroGenero">
+          <option value="todos">Todos los géneros</option>
+          <option value="ficcion">Ficción</option>
+          <option value="clasico">Clásico</option>
+          <option value="ciencia">Ciencia</option>
+        </select>
+        <select id="filtroEstado">
+          <option value="todos">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="leyendo">Leyendo</option>
+          <option value="leido">Leído</option>
+        </select>
+      </div>
+
+      <div id="listaLibros" class="cards"></div>
+    </section>
+
+    <aside class="panel">
+      <h2>🎮 Progreso del Jugador</h2>
+      <div id="panelLogros"></div>
+      <div class="divider"></div>
+      <h2>📝 IA Dice</h2>
+      <p id="fraseIA" class="ia-text">Pulsa el micrófono para inspirarte.</p>
+    </aside>
+  </main>
+
+  <footer class="footer">© 2025 BookQuest — Estética retro ochentera • PWA</footer>
+
+  <script type="module" src="js/firebaseConfig.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
