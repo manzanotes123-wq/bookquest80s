@@ -2,7 +2,7 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // 🧩 Coloca aquí tu API Key de Gemini
-const API_KEY = "TU_API_KEY_AQUI";
+const API_KEY = "AIzaSyAUZgqMa5i9LaPFrGXbHVu5bTO2KD349iU";
 
 // ⚙️ Inicializar Gemini
 let genAI;
