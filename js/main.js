@@ -1,4 +1,7 @@
-// js/main.js
+// ==================================================
+// 🕹️ Aventura Literaria 80s - Main Script
+// ==================================================
+
 import { auth, db } from "./firebaseConfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 import {
@@ -9,18 +12,23 @@ import { calcularLogros } from "./logros.js";
 import { generarFrase } from "./ia.js";
 
 // --------------------------------------------------
-// 🔹 Referencias del DOM
+// 🔹 Utilidades DOM
 // --------------------------------------------------
 const $ = (id) => document.getElementById(id);
 const lista = $("listaLibros");
+const filtroGenero = $("filtroGenero");
+const filtroEstado = $("filtroEstado");
+
+// --------------------------------------------------
+// 🔹 Botones principales
+// --------------------------------------------------
 const btnLogout = $("btnLogout");
 const btnAddDemo = $("btnAddDemo");
 const btnAddPersonal = $("btnAddPersonal");
 const btnFrase = $("btnFraseIA");
 const btnExportCSV = $("btnExportCSV");
 const btnExportPDF = $("btnExportPDF");
-const filtroGenero = $("filtroGenero");
-const filtroEstado = $("filtroEstado");
+const btnResetProgreso = $("btnResetProgreso");
 
 // --------------------------------------------------
 // 🔹 Cerrar sesión
@@ -34,12 +42,11 @@ btnLogout?.addEventListener("click", async () => {
 // 🔹 Agregar libro demo aleatorio
 // --------------------------------------------------
 let agregandoLibro = false;
-
 btnAddDemo?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return alert("⚠️ Debes iniciar sesión primero.");
+  if (agregandoLibro) return alert("⏳ Ya se está agregando un libro demo...");
 
-  if (agregandoLibro) return alert("⏳ Espera un momento, ya se está agregando un libro...");
   agregandoLibro = true;
   btnAddDemo.disabled = true;
   btnAddDemo.textContent = "📚 Agregando...";
@@ -64,26 +71,18 @@ btnAddDemo?.addEventListener("click", async () => {
     const disponibles = librosPosibles.filter(l => !titulosActuales.includes(l.titulo.toLowerCase()));
 
     if (disponibles.length === 0) {
-      btnAddDemo.disabled = true;
-      btnAddDemo.textContent = "✔️ Todos los libros agregados";
-      agregandoLibro = false;
-      return alert("🎉 Ya tienes todos los libros demo agregados.");
+      btnAddDemo.textContent = "✔️ Todos agregados";
+      return alert("🎉 Ya tienes todos los libros demo disponibles.");
     }
 
     const ultimoGuardado = localStorage.getItem("ultimoLibroAgregado");
     let libro;
-    do {
-      libro = disponibles[Math.floor(Math.random() * disponibles.length)];
-    } while (libro.titulo === ultimoGuardado && disponibles.length > 1);
+    do { libro = disponibles[Math.floor(Math.random() * disponibles.length)]; }
+    while (libro.titulo === ultimoGuardado && disponibles.length > 1);
 
-    await addDoc(ref, {
-      ...libro,
-      xp: 0,
-      estado: "pendiente",
-      createdAt: serverTimestamp()
-    });
-
+    await addDoc(ref, { ...libro, xp: 0, estado: "pendiente", createdAt: serverTimestamp() });
     localStorage.setItem("ultimoLibroAgregado", libro.titulo);
+
     await cargarLibros();
     await calcularLogros();
     alert(`✅ Libro agregado: "${libro.titulo}" de ${libro.autor}`);
@@ -108,19 +107,11 @@ btnAddPersonal?.addEventListener("click", async () => {
   const genero = $("generoPersonal").value.trim();
   const estado = $("estadoPersonal").value;
 
-  if (!titulo || !autor || !genero)
-    return alert("Por favor completa todos los campos del formulario.");
+  if (!titulo || !autor || !genero) return alert("Completa todos los campos antes de guardar.");
 
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
-    await addDoc(ref, {
-      titulo,
-      autor,
-      genero,
-      estado,
-      xp: 0,
-      createdAt: serverTimestamp()
-    });
+    await addDoc(ref, { titulo, autor, genero, estado, xp: 0, createdAt: serverTimestamp() });
 
     $("tituloPersonal").value = "";
     $("autorPersonal").value = "";
@@ -136,7 +127,7 @@ btnAddPersonal?.addEventListener("click", async () => {
 });
 
 // --------------------------------------------------
-// 🔹 Generar frase IA
+// 🔹 Generar frase IA (modo retro si no hay API)
 // --------------------------------------------------
 btnFrase?.addEventListener("click", async () => {
   btnFrase.disabled = true;
@@ -145,11 +136,19 @@ btnFrase?.addEventListener("click", async () => {
     const libros = document.querySelectorAll(".card[data-title]");
     const titulo = libros.length
       ? libros[Math.floor(Math.random() * libros.length)].dataset.title
-      : "tu último libro";
+      : "tu aventura";
     const frase = await generarFrase(titulo);
     $("fraseIA").innerText = frase;
-  } catch (e) {
-    $("fraseIA").innerText = "⚠️ No fue posible generar la frase en este momento.";
+
+    // 🗣️ Voz retro
+    const voz = new SpeechSynthesisUtterance(frase);
+    voz.lang = "es-ES";
+    voz.pitch = 0.8;
+    voz.rate = 1;
+    voz.volume = 1;
+    speechSynthesis.speak(voz);
+  } catch {
+    $("fraseIA").innerText = "⚠️ No fue posible generar la frase.";
   } finally {
     btnFrase.disabled = false;
     btnFrase.textContent = "🎤 Frase motivadora IA";
@@ -157,12 +156,37 @@ btnFrase?.addEventListener("click", async () => {
 });
 
 // --------------------------------------------------
-// 🔹 Filtros
+// 🔹 Filtros y exportaciones
 // --------------------------------------------------
 filtroGenero?.addEventListener("change", cargarLibros);
 filtroEstado?.addEventListener("change", cargarLibros);
 btnExportCSV?.addEventListener("click", exportCSV);
 btnExportPDF?.addEventListener("click", exportPDF);
+
+// --------------------------------------------------
+// 🔹 Reiniciar progreso completo
+// --------------------------------------------------
+btnResetProgreso?.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return alert("⚠️ Debes iniciar sesión primero.");
+
+  if (!confirm("⚠️ ¿Seguro que deseas reiniciar TODO tu progreso?\nLos libros volverán a 'pendiente' y XP a 0.")) return;
+
+  try {
+    const ref = collection(db, "usuarios", user.uid, "libros");
+    const snap = await getDocs(ref);
+    for (const d of snap.docs) {
+      await updateDoc(doc(db, "usuarios", user.uid, "libros", d.id), { xp: 0, estado: "pendiente" });
+    }
+    await calcularLogros();
+    await cargarLibros();
+    new Audio("assets/sounds/reset.wav").play();
+    alert("🔄 Progreso reiniciado correctamente.");
+  } catch (err) {
+    console.error("Error al reiniciar progreso:", err);
+    alert("❌ Ocurrió un error al reiniciar el progreso.");
+  }
+});
 
 // --------------------------------------------------
 // 🔹 Cargar libros
@@ -195,15 +219,17 @@ async function cargarLibros() {
       <button class="btnRead" data-id="${d.id}">📖 Marcar como leído</button>
       <button class="btnDelete" data-id="${d.id}">🗑️ Eliminar</button>
     `;
-
     lista.appendChild(card);
 
+    // 📖 Marcar como leído
     card.querySelector(".btnRead").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
       if (data.estado === "leído") return alert(`✅ "${data.titulo}" ya fue leído.`);
       try {
-        const ref = doc(db, "usuarios", user.uid, "libros", id);
-        await updateDoc(ref, { xp: (data.xp || 0) + 100, estado: "leído" });
+        await updateDoc(doc(db, "usuarios", user.uid, "libros", id), {
+          xp: (data.xp || 0) + 100,
+          estado: "leído"
+        });
         new Audio("assets/sounds/levelup.wav").play();
         await cargarLibros();
         await calcularLogros();
@@ -213,6 +239,7 @@ async function cargarLibros() {
       }
     });
 
+    // 🗑️ Eliminar libro
     card.querySelector(".btnDelete").addEventListener("click", async (ev) => {
       const id = ev.target.dataset.id;
       if (!confirm("¿Eliminar este libro?")) return;
@@ -227,29 +254,23 @@ async function cargarLibros() {
 // --------------------------------------------------
 async function exportCSV() {
   const user = auth.currentUser;
-  if (!user) return alert("⚠️ Debes iniciar sesión para exportar tus libros.");
+  if (!user) return alert("⚠️ Debes iniciar sesión.");
   try {
     const snap = await getDocs(collection(db, "usuarios", user.uid, "libros"));
     if (snap.empty) return alert("📂 No hay libros para exportar.");
     let csv = "Título,Autor,Género,Estado,XP\n";
     snap.forEach((d) => {
       const x = d.data();
-      csv += `"${(x.titulo || "").replace(/"/g, '""')}",` +
-             `"${(x.autor || "").replace(/"/g, '""')}",` +
-             `"${x.genero || ""}",` +
-             `"${x.estado || ""}",` +
-             `${x.xp || 0}\n`;
+      csv += `"${x.titulo || ""}","${x.autor || ""}","${x.genero || ""}","${x.estado || ""}",${x.xp || 0}\n`;
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = `BookQuest80s_${user.email.split("@")[0]}.csv`;
     a.click();
-    alert("✅ Exportación CSV completada.");
+    alert("✅ CSV exportado correctamente.");
   } catch (err) {
-    console.error("❌ Error al exportar CSV:", err);
-    alert("❌ Ocurrió un error al exportar el archivo CSV.");
+    alert("❌ Error al exportar CSV: " + err.message);
   }
 }
 
@@ -258,7 +279,7 @@ async function exportCSV() {
 // --------------------------------------------------
 async function exportPDF() {
   const user = auth.currentUser;
-  if (!user) return alert("⚠️ Debes iniciar sesión para exportar tus libros.");
+  if (!user) return alert("⚠️ Debes iniciar sesión.");
   try {
     const { jsPDF } = await import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
     const docPDF = new jsPDF();
@@ -268,36 +289,35 @@ async function exportPDF() {
 
     const snap = await getDocs(collection(db, "usuarios", user.uid, "libros"));
     if (snap.empty) return alert("📂 No hay libros para exportar.");
+
     let y = 30;
     docPDF.setFontSize(10);
     snap.forEach((d, i) => {
       const x = d.data();
-      const linea = `${i + 1}. ${x.titulo || "?"} — ${x.autor || "?"} (${x.genero || "?"}) [${x.estado || "?"}] XP:${x.xp || 0}`;
-      docPDF.text(linea, 10, y);
+      const line = `${i + 1}. ${x.titulo || "?"} — ${x.autor || "?"} (${x.genero || "?"}) [${x.estado || "?"}] XP:${x.xp || 0}`;
+      docPDF.text(line, 10, y);
       y += 8;
-      if (y > 270) {
-        docPDF.addPage();
-        y = 20;
-      }
+      if (y > 270) { docPDF.addPage(); y = 20; }
     });
+
     docPDF.setFontSize(8);
     docPDF.text(`Generado por ${user.email} — ${new Date().toLocaleString()}`, 10, 285);
     docPDF.save(`BookQuest80s_${user.email.split("@")[0]}.pdf`);
-    alert("✅ Exportación PDF completada.");
+    alert("✅ PDF exportado correctamente.");
   } catch (err) {
-    console.error("❌ Error al exportar PDF:", err);
-    alert("❌ Ocurrió un error al exportar el archivo PDF.");
+    alert("❌ Error al exportar PDF: " + err.message);
   }
 }
 
 // --------------------------------------------------
-// 🔹 Verificar sesión
+// 🔹 Verificar sesión activa
 // --------------------------------------------------
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "index.html";
-    return;
-  }
+  if (!user) return (window.location.href = "index.html");
+  await cargarLibros();
+  await calcularLogros();
+});
+
   await cargarLibros();
   await calcularLogros();
 });
