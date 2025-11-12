@@ -168,7 +168,7 @@ btnExportCSV?.addEventListener("click", exportCSV);
 btnExportPDF?.addEventListener("click", exportPDF);
 
 // --------------------------------------------------
-// 🔹 Reiniciar progreso completo (corregido y funcional)
+// 🔹 Reiniciar progreso completo (versión FINAL funcional)
 // --------------------------------------------------
 btnResetProgreso?.addEventListener("click", async () => {
   const user = auth.currentUser;
@@ -179,17 +179,26 @@ btnResetProgreso?.addEventListener("click", async () => {
     const ref = collection(db, "usuarios", user.uid, "libros");
     const snap = await getDocs(ref);
 
-    // 🔁 Actualizar todos los documentos en paralelo
-    const updates = snap.docs.map((d) =>
-      updateDoc(doc(db, "usuarios", user.uid, "libros", d.id), {
-        xp: 0,
-        estado: "pendiente"
-      })
-    );
-    await Promise.all(updates); // ✅ Esperar todos los updates
+    if (snap.empty) {
+      alert("📂 No hay libros para reiniciar.");
+      return;
+    }
 
-    await calcularLogros();
+    // 🔄 Actualizar todos los libros realmente en Firestore
+    const updates = [];
+    for (const d of snap.docs) {
+      const libroRef = doc(db, "usuarios", user.uid, "libros", d.id);
+      updates.push(updateDoc(libroRef, { xp: 0, estado: "pendiente" }));
+    }
+
+    await Promise.all(updates); // ✅ Esperar todos los cambios reales
+
+    // Esperar un poquito para asegurar sincronización con Firestore
+    await new Promise(res => setTimeout(res, 1000));
+
+    // Recargar datos actualizados
     await cargarLibros();
+    await calcularLogros();
 
     // 🎵 Efecto + animación retro
     new Audio("assets/sounds/reset.wav").play();
@@ -208,6 +217,7 @@ btnResetProgreso?.addEventListener("click", async () => {
     alert("❌ Ocurrió un error al reiniciar el progreso.");
   }
 });
+
 
 // --------------------------------------------------
 // 🔹 Cargar libros
