@@ -1,5 +1,5 @@
 // ==================================================
-// 🕹️ Aventura Literaria 80s - Main Script
+// 🕹️ Aventura Literaria 80s - Main Script (FINAL)
 // ==================================================
 
 import { auth, db } from "./firebaseConfig.js";
@@ -107,7 +107,8 @@ btnAddPersonal?.addEventListener("click", async () => {
   const genero = $("generoPersonal").value.trim();
   const estado = $("estadoPersonal").value;
 
-  if (!titulo || !autor || !genero) return alert("Completa todos los campos antes de guardar.");
+  if (!titulo || !autor || !genero)
+    return alert("Completa todos los campos antes de guardar.");
 
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
@@ -127,7 +128,7 @@ btnAddPersonal?.addEventListener("click", async () => {
 });
 
 // --------------------------------------------------
-// 🔹 Generar frase IA (modo retro si no hay API)
+// 🔹 Generar frase IA (modo retro)
 // --------------------------------------------------
 btnFrase?.addEventListener("click", async () => {
   btnFrase.disabled = true;
@@ -140,14 +141,17 @@ btnFrase?.addEventListener("click", async () => {
     const frase = await generarFrase(titulo);
     $("fraseIA").innerText = frase;
 
-    // 🗣️ Voz retro
-    const voz = new SpeechSynthesisUtterance(frase);
-    voz.lang = "es-ES";
-    voz.pitch = 0.8;
-    voz.rate = 1;
-    voz.volume = 1;
-    speechSynthesis.speak(voz);
-  } catch {
+    // 🗣️ Voz retro (segura)
+    if ("speechSynthesis" in window) {
+      const voz = new SpeechSynthesisUtterance(frase);
+      voz.lang = "es-ES";
+      voz.pitch = 0.8;
+      voz.rate = 1;
+      voz.volume = 1;
+      speechSynthesis.speak(voz);
+    }
+  } catch (e) {
+    console.error("Error al generar frase:", e);
     $("fraseIA").innerText = "⚠️ No fue posible generar la frase.";
   } finally {
     btnFrase.disabled = false;
@@ -169,8 +173,7 @@ btnExportPDF?.addEventListener("click", exportPDF);
 btnResetProgreso?.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return alert("⚠️ Debes iniciar sesión primero.");
-
-  if (!confirm("⚠️ ¿Seguro que deseas reiniciar TODO tu progreso?\nLos libros volverán a 'pendiente' y XP a 0.")) return;
+  if (!confirm("⚠️ ¿Reiniciar TODO tu progreso?\nLos libros volverán a 'pendiente' y XP a 0.")) return;
 
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
@@ -313,12 +316,12 @@ async function exportPDF() {
 // 🔹 Verificar sesión activa
 // --------------------------------------------------
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return (window.location.href = "index.html");
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
   await cargarLibros();
   await calcularLogros();
 });
 
-  await cargarLibros();
-  await calcularLogros();
-});
 
