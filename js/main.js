@@ -1,5 +1,5 @@
 // ==================================================
-// 🕹️ Aventura Literaria 80s - Main Script (FINAL)
+// 🕹️ Aventura Literaria 80s - Main Script (FINAL v2)
 // ==================================================
 
 import { auth, db } from "./firebaseConfig.js";
@@ -168,7 +168,7 @@ btnExportCSV?.addEventListener("click", exportCSV);
 btnExportPDF?.addEventListener("click", exportPDF);
 
 // --------------------------------------------------
-// 🔹 Reiniciar progreso completo
+// 🔹 Reiniciar progreso completo (corregido y funcional)
 // --------------------------------------------------
 btnResetProgreso?.addEventListener("click", async () => {
   const user = auth.currentUser;
@@ -178,15 +178,33 @@ btnResetProgreso?.addEventListener("click", async () => {
   try {
     const ref = collection(db, "usuarios", user.uid, "libros");
     const snap = await getDocs(ref);
-    for (const d of snap.docs) {
-      await updateDoc(doc(db, "usuarios", user.uid, "libros", d.id), { xp: 0, estado: "pendiente" });
-    }
+
+    // 🔁 Actualizar todos los documentos en paralelo
+    const updates = snap.docs.map((d) =>
+      updateDoc(doc(db, "usuarios", user.uid, "libros", d.id), {
+        xp: 0,
+        estado: "pendiente"
+      })
+    );
+    await Promise.all(updates); // ✅ Esperar todos los updates
+
     await calcularLogros();
     await cargarLibros();
+
+    // 🎵 Efecto + animación retro
     new Audio("assets/sounds/reset.wav").play();
+    const panel = document.getElementById("panelLogros");
+    if (panel) {
+      const efecto = document.createElement("div");
+      efecto.textContent = "✨ SYSTEM RESET ✨";
+      efecto.className = "neon-reset";
+      panel.appendChild(efecto);
+      setTimeout(() => efecto.remove(), 2500);
+    }
+
     alert("🔄 Progreso reiniciado correctamente.");
   } catch (err) {
-    console.error("Error al reiniciar progreso:", err);
+    console.error("❌ Error al reiniciar progreso:", err);
     alert("❌ Ocurrió un error al reiniciar el progreso.");
   }
 });
@@ -323,5 +341,6 @@ onAuthStateChanged(auth, async (user) => {
   await cargarLibros();
   await calcularLogros();
 });
+
 
 
